@@ -16,6 +16,52 @@ Two players share one kitchen and compete over a multi-round tournament.
 | Persistence | Browser storage on each device (see below) |
 | Hosting | Static site on GitHub Pages |
 
+## Game mode: Recipe Duel (current focus)
+
+Both chefs cook **the same recipe** in one shared kitchen. Whoever makes the
+dish closest to the recipe wins, as decided by a judge's scorecard.
+
+- **One shared pantry with limited stock.** Only one chef can be in the pantry at
+  a time, and there are only a few of each ingredient (e.g. 2 tomatoes, 3 patties).
+  It also has ingredients the recipe doesn't use, so grabbing the wrong one costs points.
+- **Recipe peek costs time.** The recipe card isn't always on screen. Tapping
+  📜 opens it, but your chef stands still while you read and the clock keeps running.
+- **Carry one thing at a time** (Overcooked style).
+- **Stations:** pantry (shared), 2 chopping boards (shared), stove with 2
+  burners (shared), one plate per chef on the centre island, the pass (serve), a bin.
+- **The stove cooks in real time.** Put the patty on and go do something else, but
+  come back in time: raw, then medium (green zone), then burnt.
+- **Chopping** is the swipe mini-game; cut quality is kept with the ingredient.
+- **Plating** stacks items in the order you add them. With empty hands, tapping your
+  plate takes the top item back off.
+- **Serving** at the pass locks your dish. When both are served, or the 2:30
+  timer runs out, the judge scores both plates side by side.
+
+### Scorecard (100 points)
+
+| Category | Points | How |
+|---|---|---|
+| Ingredients | 30 | Each required ingredient present; extras and wrong ones lose points |
+| Prep | 20 | Required ingredients sliced, scored by cut accuracy |
+| Cooking | 25 | Patty doneness against the perfect "medium" |
+| Assembly | 15 | Stack order compared to the recipe |
+| Speed | 10 | Time left when you served |
+
+First recipe: **Classic Cheeseburger**. Bottom bun, medium patty, sliced cheese,
+shredded lettuce, sliced tomato, top bun.
+
+### Look and feel
+
+Cozy low-poly kitchen built from free CC0 model packs by Kay Lousberg
+([Restaurant Bits](https://kaylousberg.itch.io/restaurant-bits),
+[Adventurers](https://kaylousberg.itch.io/kaykit-adventurers)). Chefs are
+the rigged adventurer characters with chef hats and aprons, and smooth
+blended animations (idle, walk, run, pick up, chop, cheer). Warm lighting,
+soft shadows, and steam/smoke/sparkle effects.
+
+The original "carrot race" prototype is a possible future mode (see the
+`prototype/shared-kitchen` branch).
+
 ## Gesture stations (first pass)
 
 - **Chopping board** — swipe across the ingredient, rhythm/accuracy matters

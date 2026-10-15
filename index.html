@@ -8,16 +8,33 @@
   </head>
   <body>
     <canvas id="scene"></canvas>
+    <div id="vignette"></div>
 
+    <div id="loading" class="screen">
+      <h1>Kitchen<br />Clash</h1>
+      <div class="progress"><i id="load-bar"></i></div>
+      <p class="small">Warming up the kitchen…</p>
+    </div>
+
+    <!-- In-game HUD -->
     <div id="hud" hidden>
-      <div class="scores"></div>
-      <div class="hint"></div>
+      <div class="hud-top">
+        <div class="chip" id="chip-me"></div>
+        <div id="timer">2:30</div>
+        <div class="chip" id="chip-them"></div>
+      </div>
+      <div class="hint" id="hint"></div>
+      <div class="hud-bottom">
+        <div id="held" class="held"></div>
+        <button id="btn-recipe" class="round-btn" aria-label="Read the recipe">📜</button>
+      </div>
     </div>
 
     <div id="toasts"></div>
 
-    <div id="menu" class="screen">
+    <div id="menu" class="screen" hidden>
       <h1>Kitchen<br />Clash</h1>
+      <p class="tagline">Same recipe. One pantry. Best dish wins.</p>
       <label class="field">
         <span>Chef name</span>
         <input id="name" maxlength="12" autocomplete="off" />
@@ -43,21 +60,85 @@
       <button id="btn-cancel" class="ghost">Cancel</button>
     </div>
 
-    <div id="countdown" hidden></div>
+    <!-- "Today's dish" card before cooking starts -->
+    <div id="intro" hidden>
+      <div class="intro-card">
+        <p class="eyebrow">Today's dish</p>
+        <div class="dish-emoji" id="intro-emoji">🍔</div>
+        <h2 id="intro-name"></h2>
+        <p class="small">Tap 📜 to check the recipe, but your chef stops while you read!</p>
+        <div id="intro-count" class="count">3</div>
+      </div>
+    </div>
 
+    <!-- Pantry bottom sheet -->
+    <div id="pantry" class="sheet-wrap" hidden>
+      <div class="sheet">
+        <div class="sheet-head">
+          <h3>🧺 Pantry</h3>
+          <button id="pantry-close" class="ghost small-btn">Close</button>
+        </div>
+        <p class="small">Take one thing. Stock is shared, so don't leave your rival the last tomato.</p>
+        <div id="pantry-grid" class="pantry-grid"></div>
+      </div>
+    </div>
+
+    <!-- Recipe card (peeking stops your chef) -->
+    <div id="recipe" class="sheet-wrap" hidden>
+      <div class="recipe-card">
+        <p class="eyebrow" id="recipe-reading">Your chef has stopped to read…</p>
+        <h3 id="recipe-name"></h3>
+        <ol id="recipe-steps"></ol>
+        <button id="recipe-close" class="primary">Back to cooking</button>
+      </div>
+    </div>
+
+    <!-- Serve prompt at the pass -->
+    <div id="serve" class="sheet-wrap" hidden>
+      <div class="sheet">
+        <h3>🛎️ Serve your dish?</h3>
+        <p class="small" id="serve-summary"></p>
+        <p class="small">Once served, you can't change it.</p>
+        <div class="row">
+          <button id="serve-no" class="ghost">Not yet</button>
+          <button id="serve-yes" class="primary">Serve it!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chopping mini-game -->
     <div id="chop" hidden>
       <canvas id="chop-canvas"></canvas>
       <div class="chop-top">
-        <span id="chop-msg">Swipe down through each line!</span>
+        <div>
+          <div id="chop-title" class="chop-title"></div>
+          <div id="chop-msg"></div>
+        </div>
         <button id="chop-leave" class="ghost small-btn">Leave</button>
       </div>
     </div>
 
-    <div id="result" class="screen" hidden>
-      <h2 id="result-title"></h2>
-      <p id="result-sub"></p>
-      <button id="btn-rematch" class="primary">Rematch</button>
-      <button id="btn-leave" class="ghost">Back to menu</button>
+    <!-- Judge's scorecard -->
+    <div id="judge" hidden>
+      <div class="judge-card">
+        <p class="eyebrow">The judge's scorecard</p>
+        <div class="score-head">
+          <span></span>
+          <b id="judge-me"></b>
+          <b id="judge-them"></b>
+        </div>
+        <div id="judge-rows"></div>
+        <div class="score-total">
+          <span>Total</span>
+          <b id="total-me">–</b>
+          <b id="total-them">–</b>
+        </div>
+        <h2 id="judge-result"></h2>
+        <div class="row" id="judge-buttons">
+          <button id="btn-leave" class="ghost">Menu</button>
+          <button id="btn-rematch" class="primary">Rematch</button>
+        </div>
+      </div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
