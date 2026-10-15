@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2118" />
+    <title>Kitchen Clash</title>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div id="hud" hidden>
+      <div class="scores"></div>
+      <div class="hint"></div>
+    </div>
+
+    <div id="toasts"></div>
+
+    <div id="menu" class="screen">
+      <h1>Kitchen<br />Clash</h1>
+      <label class="field">
+        <span>Chef name</span>
+        <input id="name" maxlength="12" autocomplete="off" />
+      </label>
+      <div class="field">
+        <span>Apron colour</span>
+        <div id="colors" class="swatches"></div>
+      </div>
+      <button id="btn-host" class="primary">Host a game</button>
+      <div class="join-row">
+        <input id="join-code" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" />
+        <button id="btn-join">Join</button>
+      </div>
+      <button id="btn-solo" class="ghost">Practice solo</button>
+      <p id="record" class="small"></p>
+      <p id="menu-error" class="error"></p>
+    </div>
+
+    <div id="lobby" class="screen" hidden>
+      <p>Room code</p>
+      <div id="room-code" class="code"></div>
+      <p class="small">Your opponent taps <b>Join</b> and enters this code.</p>
+      <button id="btn-cancel" class="ghost">Cancel</button>
+    </div>
+
+    <div id="countdown" hidden></div>
+
+    <div id="chop" hidden>
+      <canvas id="chop-canvas"></canvas>
+      <div class="chop-top">
+        <span id="chop-msg">Swipe down through each line!</span>
+        <button id="chop-leave" class="ghost small-btn">Leave</button>
+      </div>
+    </div>
+
+    <div id="result" class="screen" hidden>
+      <h2 id="result-title"></h2>
+      <p id="result-sub"></p>
+      <button id="btn-rematch" class="primary">Rematch</button>
+      <button id="btn-leave" class="ghost">Back to menu</button>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
