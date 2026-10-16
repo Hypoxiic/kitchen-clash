@@ -16,6 +16,58 @@ Two players share one kitchen and compete over a multi-round tournament.
 | Persistence | Browser storage on each device (see below) |
 | Hosting | Static site on GitHub Pages |
 
+## Game mode: Recipe Duel (current focus)
+
+Both chefs cook **the same recipe** in one shared kitchen. Whoever makes the
+dish closest to the recipe wins, as decided by a judge's scorecard.
+
+- **Walk-in pantry and walk-in fridge** behind the kitchen. Both chefs can be inside at
+  once (and bump into each other), but stock is limited and shared. Each room also has
+  ingredients the recipe doesn't use, so grabbing the wrong one costs points.
+- **Recipe peek costs time.** The recipe card isn't always on screen. Tapping
+  📜 opens it, but your chef stands still while you read and the clock keeps running.
+- **Carry one thing at a time** (Overcooked style).
+- **Stations:** walk-in pantry and fridge, 2 chopping boards, a grill with 2 burners,
+  a blowtorch, 2 stew pots, one plate per chef on the centre island, the pass, a bin.
+  Each has a floating sign and a floor spot, and the one you need next glows.
+- **The stove cooks in real time.** Put the patty on and go do something else, but
+  come back in time: raw, then medium (green zone), then burnt.
+- **Chopping** is the swipe mini-game; cut quality is kept with the ingredient.
+- **Plating** stacks items in the order you add them. With empty hands, tapping your
+  plate takes the top item back off.
+- **Serving** at the pass locks your dish. When both are served, or the 2:30
+  timer runs out, the judge scores both plates side by side.
+
+### Scorecard (100 points)
+
+| Category | Points | How |
+|---|---|---|
+| Ingredients | 30 | Each required ingredient present; extras and wrong ones lose points |
+| Prep | 20 | Required ingredients sliced, scored by cut accuracy |
+| Cooking | 25 | Patty doneness against the perfect "medium" |
+| Assembly | 15 | Stack order compared to the recipe |
+| Speed | 10 | Time left when you served |
+
+Recipes (all halal, no pork or alcohol): **Classic Cheeseburger**, **Garden Veggie
+Burger**, **Steak & Mash** (potato boiled to mash in a pot) and **Garden Veg Stew**
+(stirred in a pot). Burgers need the cheese melted with the blowtorch. For the stew,
+"Assembly" is replaced by "Stirring".
+
+Kitchen themes: **Cozy Cottage**, **Retro Diner**, **Night Bistro**, **Spice Market**.
+Each changes the floor, wall paint, counter colours, lighting and decor.
+
+### Look and feel
+
+Cozy low-poly kitchen built from free CC0 model packs by Kay Lousberg
+([Restaurant Bits](https://kaylousberg.itch.io/restaurant-bits),
+[Adventurers](https://kaylousberg.itch.io/kaykit-adventurers)). Chefs are
+the rigged adventurer characters with chef hats and aprons, and smooth
+blended animations (idle, walk, run, pick up, chop, cheer). Warm lighting,
+soft shadows, and steam/smoke/sparkle effects.
+
+The original "carrot race" prototype is a possible future mode (see the
+`prototype/shared-kitchen` branch).
+
 ## Gesture stations (first pass)
 
 - **Chopping board** — swipe across the ingredient, rhythm/accuracy matters

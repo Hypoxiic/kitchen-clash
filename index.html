@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2118" />
+    <title>Kitchen Clash</title>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div id="vignette"></div>
+
+    <div id="loading" class="screen">
+      <h1>Kitchen<br />Clash</h1>
+      <div class="progress"><i id="load-bar"></i></div>
+      <p class="small">Warming up the kitchen…</p>
+    </div>
+
+    <!-- In-game HUD -->
+    <div id="hud" hidden>
+      <div class="hud-top">
+        <div class="chip" id="chip-me"></div>
+        <div id="timer">2:30</div>
+        <div class="chip" id="chip-them"></div>
+      </div>
+      <div class="hint" id="hint"></div>
+      <div class="hud-bottom">
+        <div id="held" class="held"></div>
+        <button id="btn-takeback" class="pill-btn" hidden>↩ Take back top item</button>
+        <button id="btn-recipe" class="round-btn" aria-label="Read the recipe">📜</button>
+      </div>
+    </div>
+
+    <div id="toasts"></div>
+
+    <div id="menu" class="screen" hidden>
+      <h1>Kitchen<br />Clash</h1>
+      <p class="tagline">Same recipe. One kitchen. Best dish wins.</p>
+      <label class="field">
+        <span>Chef name</span>
+        <input id="name" maxlength="12" autocomplete="off" />
+      </label>
+      <div class="field">
+        <span>Apron colour</span>
+        <div id="colors" class="swatches"></div>
+      </div>
+      <div class="field">
+        <span>Dish</span>
+        <div class="picker">
+          <button id="dish-prev" class="ghost" aria-label="Previous dish">‹</button>
+          <b id="pick-dish"></b>
+          <button id="dish-next" class="ghost" aria-label="Next dish">›</button>
+        </div>
+      </div>
+      <div class="field">
+        <span>Kitchen</span>
+        <div class="picker">
+          <button id="theme-prev" class="ghost" aria-label="Previous kitchen">‹</button>
+          <b id="pick-theme"></b>
+          <button id="theme-next" class="ghost" aria-label="Next kitchen">›</button>
+        </div>
+      </div>
+      <button id="btn-host" class="primary">Host a game</button>
+      <div class="join-row">
+        <input id="join-code" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" />
+        <button id="btn-join">Join</button>
+      </div>
+      <button id="btn-solo" class="ghost">Practice solo</button>
+      <p id="record" class="small"></p>
+      <p id="menu-error" class="error"></p>
+    </div>
+
+    <div id="lobby" class="screen" hidden>
+      <p>Room code</p>
+      <div id="room-code" class="code"></div>
+      <p class="small">Your opponent taps <b>Join</b> and enters this code.</p>
+      <button id="btn-cancel" class="ghost">Cancel</button>
+    </div>
+
+    <!-- "Today's dish" card before cooking starts -->
+    <div id="intro" hidden>
+      <div class="intro-card">
+        <p class="eyebrow">Today's dish</p>
+        <div class="dish-emoji" id="intro-emoji">🍔</div>
+        <h2 id="intro-name"></h2>
+        <p class="intro-theme" id="intro-theme"></p>
+        <p class="small">Tap 📜 to check the recipe, but your chef stops while you read!</p>
+        <div id="intro-count" class="count">3</div>
+      </div>
+    </div>
+
+    <!-- Walk-in pantry / fridge bottom sheet -->
+    <div id="store" class="sheet-wrap" hidden>
+      <div class="sheet">
+        <div class="sheet-head">
+          <h3 id="store-title">🧺 Walk-in Pantry</h3>
+          <button id="store-close" class="ghost small-btn">Close</button>
+        </div>
+        <p class="small">Take one thing. Stock is shared, so don't leave your rival the last one.</p>
+        <div id="store-grid" class="store-grid"></div>
+      </div>
+    </div>
+
+    <!-- Recipe card (peeking stops your chef) -->
+    <div id="recipe" class="sheet-wrap" hidden>
+      <div class="recipe-card">
+        <p class="eyebrow" id="recipe-reading">Your chef has stopped to read…</p>
+        <h3 id="recipe-name"></h3>
+        <ol id="recipe-steps"></ol>
+        <button id="recipe-close" class="primary">Back to cooking</button>
+      </div>
+    </div>
+
+    <!-- Serve prompt at the pass -->
+    <div id="serve" class="sheet-wrap" hidden>
+      <div class="sheet">
+        <h3>🛎️ Serve your dish?</h3>
+        <p class="small" id="serve-summary"></p>
+        <p class="small">Once served, you can't change it.</p>
+        <div class="row">
+          <button id="serve-no" class="ghost">Not yet</button>
+          <button id="serve-yes" class="primary">Serve it!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini-games: chop, torch, stir -->
+    <div id="game" hidden>
+      <canvas id="game-canvas"></canvas>
+      <div class="game-top">
+        <div>
+          <div id="game-title" class="game-title"></div>
+          <div id="game-msg"></div>
+        </div>
+        <button id="game-leave" class="ghost small-btn">Leave</button>
+      </div>
+      <button id="game-done" class="primary game-done" hidden>Done ✓</button>
+    </div>
+
+    <!-- Judge's scorecard -->
+    <div id="judge" hidden>
+      <div class="judge-card">
+        <p class="eyebrow">The judge's scorecard</p>
+        <div class="score-head">
+          <span></span>
+          <b id="judge-me"></b>
+          <b id="judge-them"></b>
+        </div>
+        <div id="judge-rows"></div>
+        <div class="score-total">
+          <span>Total</span>
+          <b id="total-me">–</b>
+          <b id="total-them">–</b>
+        </div>
+        <h2 id="judge-result"></h2>
+        <div class="row" id="judge-buttons">
+          <button id="btn-leave" class="ghost">Menu</button>
+          <button id="btn-rematch" class="primary">Rematch</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

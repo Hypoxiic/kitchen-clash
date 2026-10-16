@@ -1,0 +1,30 @@
+{
+  "name": "kitchen-clash",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Head-to-head 3D cooking game for two phones",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "typecheck": "tsc --noEmit",
+    "assets": "node scripts/build-assets.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hypoxiic/kitchen-clash.git"
+  },
+  "dependencies": {
+    "peerjs": "^1.5.5",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "@types/three": "^0.186.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4"
+  }
+}
