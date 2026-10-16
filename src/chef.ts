@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { chefSource, cloneChef, itemModelName, model } from './assets';
+import { centredModel, chefSource, cloneChef, itemModelName, model, tintItem } from './assets';
 import type { Chef, Item } from './types';
 
 const FADE = 0.22;
@@ -53,7 +53,7 @@ export class ChefModel {
         this.oneShot.fadeOut(FADE);
         this.oneShot = null;
         const base = this.base && this.actions.get(this.base);
-        base?.reset().fadeIn(FADE).play();
+        base?.reset().setLoop(THREE.LoopRepeat, Infinity).fadeIn(FADE).play();
       }
     });
 
@@ -123,12 +123,14 @@ export class ChefModel {
     }
 
     const chopping = chef.busy === 'chopping';
+    // While chopping or torching, the food sits on the counter instead of in hand.
+    const handsBusy = chopping || chef.busy === 'torching';
     this.knife.visible = chopping;
     let want: BaseAnim = 'Idle';
     if (this.pose) want = this.pose;
     else if (chopping) want = '1H_Melee_Attack_Chop';
-    else if (chef.busy === 'reading') want = 'Use_Item';
-    else if (chef.busy === 'pantry') want = 'Interact';
+    else if (chef.busy === 'reading' || chef.busy === 'torching') want = 'Use_Item';
+    else if (chef.busy === 'store' || chef.busy === 'stirring') want = 'Interact';
     else if (this.moveSpeed > RUN_THRESHOLD) want = 'Running_A';
     else if (this.moveSpeed > 0.25) want = 'Walking_A';
     this.setBase(want);
@@ -140,8 +142,7 @@ export class ChefModel {
       else act.timeScale = 1;
     }
 
-    // While chopping, the food sits on the board instead of in hand.
-    this.setHeld(chopping ? null : chef.held);
+    this.setHeld(handsBusy ? null : chef.held);
     this.mixer.update(dt);
   }
 
@@ -151,7 +152,8 @@ export class ChefModel {
     const prev = this.base && this.actions.get(this.base);
     this.base = name;
     if (!next || this.oneShot) return;
-    next.reset().setEffectiveWeight(1).fadeIn(FADE).play();
+    // One-shots can share a clip with a loop (e.g. Interact), so always restore looping.
+    next.reset().setLoop(THREE.LoopRepeat, Infinity).setEffectiveWeight(1).fadeIn(FADE).play();
     prev?.fadeOut(FADE);
   }
 
@@ -169,14 +171,15 @@ export class ChefModel {
   }
 
   private setHeld(item: Item | null) {
-    const key = item ? itemModelName(item) : '';
+    const key = item ? `${itemModelName(item)}:${item.melt >= 0}:${Math.round(item.doneness * 10)}` : '';
     if (key === this.heldKey) return;
     this.heldKey = key;
     if (this.held) this.handSlot.remove(this.held);
     this.held = null;
     if (!item) return;
-    const m = model(key);
-    m.scale.setScalar(0.55 * this.handScale);
+    const m = centredModel(itemModelName(item), item.kind === 'stew' ? 0.8 : 0.55);
+    tintItem(m, item);
+    m.scale.multiplyScalar(this.handScale);
     m.position.set(0, 0.05 * this.handScale, 0.15 * this.handScale);
     this.handSlot.add(m);
     this.held = m;

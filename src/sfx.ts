@@ -88,6 +88,9 @@ export const sfx = {
     noise(0.07, 2600, 0.35, 0.8);
     tone(180, 0.06, 'square', 0.06, 90);
   },
+  torch() {
+    noise(0.2, 900, 0.12, 0.6);
+  },
   ding() {
     tone(1318, 1.2, 'sine', 0.22);
     tone(1975, 0.8, 'sine', 0.08);

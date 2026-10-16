@@ -1,17 +1,29 @@
 export type PlayerId = 'host' | 'guest';
 
-export type Ingredient = 'bun' | 'patty' | 'cheese' | 'lettuce' | 'tomato' | 'onion' | 'ham' | 'carrot';
+/** Everything in the game is halal: no pork, no alcohol. */
+export type Ingredient =
+  | 'bun' | 'patty' | 'vegpatty' | 'steak' | 'cheese' | 'lettuce' | 'tomato'
+  | 'onion' | 'potato' | 'carrot'
+  // Made in a pot:
+  | 'mash' | 'stew';
 
 export interface Item {
   kind: Ingredient;
   sliced: boolean;
   /** 0..1 accuracy of the chopping mini-game (only meaningful when sliced). */
   cut: number;
-  /** Grill progress: 0 raw, 1 perfect medium, >= BURNT_AT burnt. */
+  /** Grill/pot progress: 0 raw, 1 perfect, >= BURNT_AT burnt. */
   doneness: number;
+  /** Blowtorch quality 0..1, or -1 if never torched. */
+  melt: number;
+  /** Pot stirring quality 0..1. */
+  stir: number;
+  /** What went into a pot dish (mash/stew). */
+  contents: Ingredient[];
 }
 
-export type StationKind = 'pantry' | 'board' | 'stove' | 'plate' | 'pass' | 'bin';
+export type StationKind = 'store' | 'board' | 'stove' | 'pot' | 'torch' | 'plate' | 'pass' | 'bin';
+export type StoreId = 'pantry' | 'fridge';
 
 export interface Station {
   id: string;
@@ -23,15 +35,21 @@ export interface Station {
   face: number;
   /** Plates belong to one chef. */
   owner?: PlayerId;
-  /** Chef currently using it (pantry, boards). */
+  /** Which walk-in room a store station is. */
+  store?: StoreId;
+  /** Chef currently using it (boards, torch). Stores are shared. */
   occupant: PlayerId | null;
-  /** Item sitting on it (stove burners). */
+  /** Item sitting on it (grill burners). */
   item: Item | null;
-  /** Who put the item there. */
+  /** Who put the item/pot contents there. */
   by: PlayerId | null;
+  /** Pot contents, cooking progress and stirring. */
+  pot: Item[];
+  cook: number;
+  stir: number;
 }
 
-export type Busy = null | 'pantry' | 'chopping' | 'reading';
+export type Busy = null | 'store' | 'chopping' | 'torching' | 'stirring' | 'reading';
 
 export interface Chef {
   id: PlayerId;
@@ -49,6 +67,8 @@ export interface Chef {
   busy: Busy;
   busyAt: string | null;
   atPass: boolean;
+  /** Standing at their own plate (shows the "take back" button). */
+  atPlate: boolean;
   served: boolean;
   /** Seconds left on the clock when served. */
   servedTimeLeft: number;
@@ -77,10 +97,11 @@ export interface GameState {
   timeLeft: number;
   roundTime: number;
   recipe: string;
+  theme: string;
   chefs: Partial<Record<PlayerId, Chef>>;
   stations: Station[];
   plates: Record<PlayerId, Item[]>;
-  stock: Record<Ingredient, number>;
+  stock: Partial<Record<Ingredient, number>>;
   scores: Partial<Record<PlayerId, DishScore>>;
   winner: PlayerId | 'tie' | null;
 }
@@ -90,14 +111,21 @@ export interface Profile {
   color: string;
 }
 
+/** Host's choices for the round; 'random' picks a new one each round. */
+export interface RoundSettings {
+  recipe: string;
+  theme: string;
+}
+
 export type Intent =
   | { t: 'move'; x: number; z: number; station: string | null }
   | { t: 'take'; kind: Ingredient }
-  | { t: 'closePantry' }
-  | { t: 'chopDone'; quality: number }
-  | { t: 'chopCancel' }
+  | { t: 'closeStore' }
+  | { t: 'gameDone'; quality: number }
+  | { t: 'gameCancel' }
   | { t: 'read'; on: boolean }
-  | { t: 'serve' };
+  | { t: 'serve' }
+  | { t: 'takeBack' };
 
 export type NetMsg =
   | { t: 'hello'; profile: Profile }

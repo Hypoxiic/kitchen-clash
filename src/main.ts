@@ -2,24 +2,33 @@ import './style.css';
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 import { loadAssets } from './assets';
-import { ChopGame } from './chop';
+import { makeStations } from './layout';
+import { MiniGames } from './minigames';
 import { hostRoom, joinRoom } from './net';
-import { INGREDIENTS, itemLabel, PANTRY_ORDER, RECIPES } from './recipes';
+import { INGREDIENTS, itemLabel, RECIPE_IDS, RECIPES, STORE_ORDER } from './recipes';
 import { KitchenView } from './scene';
 import { sfx } from './sfx';
 import { Sim } from './sim';
-import { COLORS, loadHistory, loadProfile, recordMatch, saveProfile } from './storage';
-import type { GameState, Intent, NetMsg, PlayerId } from './types';
+import { COLORS, loadHistory, loadProfile, loadSettings, recordMatch, saveProfile, saveSettings } from './storage';
+import { THEME_IDS, THEMES } from './themes';
+import type { GameState, Ingredient, Intent, NetMsg, PlayerId, StoreId } from './types';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 const STATE_SEND_MS = 50;
 const TAP_SLOP_PX = 14;
+const STORE_NAMES: Record<StoreId, string> = { pantry: '🧺 Walk-in Pantry', fridge: '❄️ Walk-in Fridge' };
+const STORE_SHORT: Record<StoreId, string> = { pantry: '🧺 pantry', fridge: '❄️ fridge' };
+const BOARDS = ['board-l', 'board-r'];
+const GRILLS = ['stove-l', 'stove-r'];
+const POTS = ['pot-a', 'pot-b'];
+const STEW_COLOR = '#b5652b';
 
 const view = new KitchenView($<HTMLCanvasElement>('scene'));
-const chop = new ChopGame();
+const games = new MiniGames();
 
 let profile = loadProfile();
+let settings = loadSettings();
 let me: PlayerId = 'host';
 /** Only set on the host (or in solo practice). */
 let sim: Sim | null = null;
@@ -28,11 +37,12 @@ let conn: DataConnection | null = null;
 let state: GameState | null = null;
 let stateAt = 0;
 let prev: GameState | null = null;
-/** Board we just finished/left locally; don't reopen it while the host catches up. */
-let chopLock: string | null = null;
-let pantryLock = false;
+/** Station whose mini-game we just finished/left locally; don't reopen it while the host catches up. */
+let gameLock: string | null = null;
+let storeLock = false;
 let serveDismissed = false;
 let judgeShown = false;
+let highlights: string[] = [];
 
 const them = () => (me === 'host' ? 'guest' : 'host') as PlayerId;
 
@@ -54,9 +64,32 @@ function renderMenu() {
     };
     swatches.append(b);
   }
+  const recipe = RECIPES[settings.recipe];
+  $('pick-dish').textContent = recipe ? `${recipe.emoji} ${recipe.name}` : '🎲 Surprise me';
+  const theme = THEMES[settings.theme];
+  $('pick-theme').textContent = theme ? `${theme.emoji} ${theme.name}` : '🎲 Surprise me';
+  // Preview the chosen kitchen behind the menu.
+  idleState.theme = theme?.id ?? 'cottage';
   const history = loadHistory();
   const wins = history.filter((m) => m.won).length;
   $('record').textContent = history.length ? `Record: ${wins}W – ${history.length - wins}L` : '';
+}
+
+function cycle(list: string[], current: string, step: number) {
+  const all = ['random', ...list];
+  return all[(all.indexOf(current) + step + all.length) % all.length];
+}
+
+for (const [key, list] of [['dish', RECIPE_IDS], ['theme', THEME_IDS]] as const) {
+  for (const step of [-1, 1]) {
+    $(`${key}-${step < 0 ? 'prev' : 'next'}`).onclick = () => {
+      if (key === 'dish') settings = { ...settings, recipe: cycle(list, settings.recipe, step) };
+      else settings = { ...settings, theme: cycle(list, settings.theme, step) };
+      saveSettings(settings);
+      sfx.tap();
+      renderMenu();
+    };
+  }
 }
 
 $<HTMLInputElement>('name').addEventListener('input', (e) => {
@@ -83,7 +116,7 @@ function menuError(msg: string) {
 
 $('btn-solo').onclick = () => {
   me = 'host';
-  sim = new Sim(onSimEvent);
+  sim = new Sim(onSimEvent, settings);
   sim.addChef('host', profile);
   beginMatch();
 };
@@ -140,7 +173,7 @@ $('btn-rematch').onclick = () => {
 
 function onHostData(msg: NetMsg) {
   if (msg.t === 'hello') {
-    sim = new Sim(onSimEvent);
+    sim = new Sim(onSimEvent, settings);
     sim.addChef('host', profile);
     sim.addChef('guest', msg.profile);
     beginMatch();
@@ -167,7 +200,7 @@ function onSimEvent(who: PlayerId, text: string) {
 
 function beginMatch() {
   view.reset();
-  chopLock = null;
+  gameLock = null;
   judgeShown = false;
   prev = null;
   menuError('');
@@ -175,8 +208,8 @@ function beginMatch() {
 }
 
 function leave(reason = '') {
-  chop.close();
-  for (const id of ['pantry', 'recipe', 'serve', 'judge', 'intro']) $(id).hidden = true;
+  games.close();
+  for (const id of ['store', 'recipe', 'serve', 'judge', 'intro']) $(id).hidden = true;
   conn?.close();
   peer?.destroy();
   conn = null;
@@ -207,11 +240,13 @@ canvas.addEventListener('pointerup', (e) => {
   if (moved > TAP_SLOP_PX) return;
   const hit = view.pick(e.clientX, e.clientY);
   if (!hit) return;
-  const st = hit.station ? state.stations.find((s) => s.id === hit.station) : undefined;
+  // The island holds both plates; tapping it always means your own.
+  const station = hit.station === 'island' ? `plate-${me}` : hit.station;
+  const st = station ? state.stations.find((s) => s.id === station) : undefined;
   view.showMarker(st ? st.ax : hit.x, st ? st.az : hit.z);
   sfx.tap();
   serveDismissed = false;
-  sendIntent({ t: 'move', x: hit.x, z: hit.z, station: hit.station });
+  sendIntent({ t: 'move', x: hit.x, z: hit.z, station });
 });
 
 // ---------- Recipe card ----------
@@ -233,37 +268,58 @@ function openRecipe() {
   $('recipe').hidden = false;
 }
 
-// ---------- Pantry ----------
+// ---------- Walk-in pantry / fridge ----------
 
-$('pantry-close').onclick = () => {
-  pantryLock = true;
-  $('pantry').hidden = true;
-  sendIntent({ t: 'closePantry' });
+$('store-close').onclick = () => {
+  storeLock = true;
+  $('store').hidden = true;
+  sendIntent({ t: 'closeStore' });
 };
 
-function renderPantry(s: GameState) {
-  const grid = $('pantry-grid');
-  if (!grid.children.length) {
-    for (const kind of PANTRY_ORDER) {
+let storeShown: StoreId | null = null;
+function renderStore(s: GameState, room: StoreId) {
+  const grid = $('store-grid');
+  if (storeShown !== room) {
+    storeShown = room;
+    $('store-title').textContent = STORE_NAMES[room];
+    grid.innerHTML = '';
+    for (const kind of STORE_ORDER[room]) {
       const b = document.createElement('button');
-      b.className = 'pantry-item';
+      b.className = 'store-item';
       b.dataset.kind = kind;
       b.innerHTML = `<span class="emoji">${INGREDIENTS[kind].emoji}</span><span class="label">${INGREDIENTS[kind].name}</span><span class="stock"></span>`;
       b.onclick = () => {
-        pantryLock = true;
-        $('pantry').hidden = true;
+        storeLock = true;
+        $('store').hidden = true;
         sendIntent({ t: 'take', kind });
       };
       grid.append(b);
     }
   }
+  const needed = neededIngredients(s);
   for (const b of grid.children as HTMLCollectionOf<HTMLButtonElement>) {
-    const n = s.stock[b.dataset.kind as keyof typeof s.stock];
+    const kind = b.dataset.kind as Ingredient;
+    const n = s.stock[kind] ?? 0;
     b.disabled = n <= 0;
     b.querySelector('.stock')!.textContent = n <= 0 ? 'Gone' : `×${n}`;
     b.classList.toggle('last', n === 1);
+    b.classList.toggle('needed', needed.has(kind));
   }
 }
+
+/** Ingredients the recipe uses (to gently mark them in the store). Not a spoiler: the card says the same. */
+function neededIngredients(s: GameState): Set<Ingredient> {
+  const set = new Set<Ingredient>();
+  for (const c of RECIPES[s.recipe]?.components ?? []) {
+    if (c.contents) c.contents.forEach((k) => set.add(k));
+    else set.add(c.kind);
+  }
+  return set;
+}
+
+// ---------- Plate: take back the top item ----------
+
+$('btn-takeback').onclick = () => sendIntent({ t: 'takeBack' });
 
 // ---------- Serve ----------
 
@@ -303,24 +359,66 @@ function syncHud(s: GameState) {
   held.hidden = !mine?.held;
   if (mine?.held) held.textContent = `${INGREDIENTS[mine.held.kind].emoji} ${itemLabel(mine.held)}`;
 
-  $('hint').textContent = hintFor(s);
+  const step = nextStep(s);
+  highlights = step.stations;
+  $('hint').textContent = step.hint;
   $('btn-recipe').hidden = s.phase !== 'cooking' || !!mine?.served;
+  $('btn-takeback').hidden = !(s.phase === 'cooking' && mine?.atPlate && !mine.held && !mine.served && s.plates[me].length);
 }
 
-function hintFor(s: GameState): string {
+/** What to do next, and which stations to light up for it. */
+function nextStep(s: GameState): { hint: string; stations: string[] } {
   const mine = s.chefs[me];
-  if (!mine || s.phase !== 'cooking' || mine.busy) return '';
-  if (mine.served) return 'Served! Waiting for the judge…';
-  const plate = s.plates[me];
-  if (!plate.length && !mine.held) return 'Head to the 🧺 pantry to start';
-  if (mine.held) {
-    const info = INGREDIENTS[mine.held.kind];
-    if (info.grill && mine.held.doneness < 0.6) return 'Grill it on the 🔥 stove';
-    if (info.cuts && !mine.held.sliced && RECIPES[s.recipe].slice.includes(mine.held.kind)) return 'Slice it on a 🔪 board';
-    return 'Add it to your plate (centre island)';
+  const recipe = RECIPES[s.recipe];
+  if (!mine || !recipe || s.phase !== 'cooking' || mine.busy) return { hint: '', stations: [] };
+  if (mine.served) return { hint: 'Served! Waiting for the judge…', stations: [] };
+  const plate = `plate-${me}`;
+  const held = mine.held;
+
+  if (held) {
+    const info = INGREDIENTS[held.kind];
+    const name = info.name.toLowerCase();
+    const comp = recipe.components.find((c) => c.kind === held.kind);
+    const forPot = recipe.components.some((c) => c.contents?.includes(held.kind));
+    if (!comp && !forPot) return { hint: `${info.name} isn't in this recipe. 🗑️ Bin it?`, stations: ['bin'] };
+    if (!comp && forPot) {
+      if (!held.sliced) return { hint: `Chop the ${name} on a 🔪 board`, stations: BOARDS };
+      return { hint: 'Put it in a 🍲 pot', stations: POTS };
+    }
+    if (comp!.slice && !held.sliced) return { hint: `Slice the ${name} on a 🔪 board`, stations: BOARDS };
+    if (comp!.melt && held.melt < 0) return { hint: `Melt the ${name} with the 🔥 torch`, stations: ['torch'] };
+    if (comp!.grill && held.doneness < 0.6) return { hint: `Cook the ${name} on the 🍳 grill`, stations: GRILLS };
+    return { hint: 'Add it to your plate on the island', stations: [plate] };
   }
-  if (plate.length >= RECIPES[s.recipe].stack.length) return 'Looking good! Serve it at the 🛎️ pass';
-  return '';
+
+  // Food of yours that's ready to collect.
+  const myGrill = s.stations.find((st) => st.kind === 'stove' && st.by === me && st.item && st.item.doneness >= 0.85);
+  if (myGrill) return { hint: 'Your food is ready on the 🍳 grill!', stations: [myGrill.id] };
+  const myPot = s.stations.find((st) => st.kind === 'pot' && st.by === me && st.pot.length);
+  if (myPot && myPot.cook >= 0.85) return { hint: 'Your 🍲 pot is ready. Scoop it out!', stations: [myPot.id] };
+
+  const onPlate = s.plates[me];
+  const cooking = new Set(s.stations.filter((st) => st.kind === 'stove' && st.by === me && st.item).map((st) => st.item!.kind));
+  for (const c of recipe.components) {
+    if (onPlate.some((i) => i.kind === c.kind)) continue;
+    if (c.contents) {
+      const inPot = myPot ? myPot.pot.map((i) => i.kind) : [];
+      const need = c.contents.find((k) => !inPot.includes(k));
+      if (need) {
+        const room = INGREDIENTS[need].store!;
+        return { hint: `Grab a ${INGREDIENTS[need].name.toLowerCase()} from the ${STORE_SHORT[room]}`, stations: [`store-${room}`] };
+      }
+      if (myPot && myPot.stir < 1) return { hint: 'Stir your 🍲 pot while it cooks', stations: [myPot.id] };
+      continue;
+    }
+    if (cooking.has(c.kind)) continue;
+    const room = INGREDIENTS[c.kind].store!;
+    return { hint: `Grab a ${INGREDIENTS[c.kind].name.toLowerCase()} from the ${STORE_SHORT[room]}`, stations: [`store-${room}`] };
+  }
+  if (recipe.components.every((c) => onPlate.some((i) => i.kind === c.kind))) {
+    return { hint: 'Looking good! Serve it at the 🛎️ pass', stations: ['pass'] };
+  }
+  return { hint: 'Keep an eye on what’s cooking…', stations: [...(myPot ? [myPot.id] : []), ...GRILLS] };
 }
 
 function syncIntro(s: GameState) {
@@ -328,8 +426,10 @@ function syncIntro(s: GameState) {
   intro.hidden = s.phase !== 'intro';
   if (intro.hidden) return;
   const recipe = RECIPES[s.recipe];
+  const theme = THEMES[s.theme];
   $('intro-emoji').textContent = recipe.emoji;
   $('intro-name').textContent = recipe.name;
+  $('intro-theme').textContent = theme ? `${theme.emoji} ${theme.name}` : '';
   const n = Math.max(1, Math.ceil(s.countdown));
   const el = $('intro-count');
   if (el.textContent !== String(n)) {
@@ -342,28 +442,30 @@ function syncOverlays(s: GameState) {
   const mine = s.chefs[me];
   if (!mine) return;
 
-  // Pantry sheet follows the host's state (one chef at a time).
-  if (mine.busy !== 'pantry') pantryLock = false;
-  const pantryOpen = mine.busy === 'pantry' && !pantryLock;
-  $('pantry').hidden = !pantryOpen;
-  if (pantryOpen) renderPantry(s);
+  // Walk-in pantry / fridge sheet.
+  if (mine.busy !== 'store') storeLock = false;
+  const room = mine.busy === 'store' ? s.stations.find((st) => st.id === mine.busyAt)?.store : undefined;
+  const storeOpen = !!room && !storeLock;
+  $('store').hidden = !storeOpen;
+  if (storeOpen) renderStore(s, room!);
 
-  // Chopping.
-  const at = mine.busy === 'chopping' ? mine.busyAt : null;
-  if (!at) chopLock = null;
-  if (at && mine.held && !chop.isOpen && at !== chopLock) {
-    chop.open(
-      mine.held.kind,
-      (quality) => {
-        chopLock = at;
-        sendIntent({ t: 'chopDone', quality });
-      },
-      () => {
-        chopLock = at;
-        sendIntent({ t: 'chopCancel' });
-      },
-    );
-  } else if (!at && chop.isOpen) chop.close();
+  // Mini-games: chopping, torching, stirring.
+  const playing = mine.busy === 'chopping' || mine.busy === 'torching' || mine.busy === 'stirring';
+  const at = playing ? mine.busyAt : null;
+  if (!at) gameLock = null;
+  if (at && !games.isOpen && at !== gameLock) {
+    const done = (quality: number) => {
+      gameLock = at;
+      sendIntent({ t: 'gameDone', quality });
+    };
+    const cancel = () => {
+      gameLock = at;
+      sendIntent({ t: 'gameCancel' });
+    };
+    if (mine.busy === 'chopping' && mine.held) games.chop(mine.held.kind, done, cancel);
+    else if (mine.busy === 'torching') games.torch(done, cancel);
+    else if (mine.busy === 'stirring') games.stir(STEW_COLOR, done, cancel);
+  } else if (!at && games.isOpen) games.close();
 
   // Recipe card closes if the round ends.
   if (s.phase !== 'cooking') $('recipe').hidden = true;
@@ -389,7 +491,9 @@ function syncSounds(s: GameState) {
     if (mine.served && !old.served) sfx.ding();
   }
   if (prev?.phase === 'intro' && s.phase === 'cooking') sfx.go();
-  const cooking = s.phase === 'cooking' ? s.stations.filter((st) => st.kind === 'stove' && st.item).length : 0;
+  const cooking = s.phase === 'cooking'
+    ? s.stations.filter((st) => (st.kind === 'stove' && st.item) || (st.kind === 'pot' && st.pot.length)).length
+    : 0;
   sfx.sizzle(cooking);
 }
 
@@ -408,8 +512,8 @@ function syncJudging(s: GameState) {
   }
   if (judgeShown) return;
   judgeShown = true;
-  chop.close();
-  for (const id of ['pantry', 'recipe', 'serve']) $(id).hidden = true;
+  games.close();
+  for (const id of ['store', 'recipe', 'serve']) $(id).hidden = true;
 
   const mine = s.chefs[me]!;
   const theirs = s.chefs[them()];
@@ -526,12 +630,13 @@ function tick(now: number, dt: number) {
     syncJudging(state);
     prev = structuredClone(state);
   }
-  view.update(state ?? idleState, me, dt, (now - stateAt) / 1000);
+  view.update(state ?? idleState, me, dt, (now - stateAt) / 1000, highlights);
 }
 
+/** What the menu shows behind it: the empty kitchen in the chosen (or default) theme. */
 const idleState: GameState = {
-  phase: 'intro', countdown: 0, timeLeft: 0, roundTime: 0, recipe: 'cheeseburger', chefs: {}, stations: [],
-  plates: { host: [], guest: [] }, stock: RECIPES.cheeseburger.stock, scores: {}, winner: null,
+  phase: 'intro', countdown: 0, timeLeft: 0, roundTime: 0, recipe: 'cheeseburger', theme: 'cottage', chefs: {},
+  stations: makeStations(), plates: { host: [], guest: [] }, stock: {}, scores: {}, winner: null,
 };
 
 // ---------- Boot ----------
@@ -541,7 +646,6 @@ requestAnimationFrame(frame);
 loadAssets((p) => ($('load-bar').style.width = `${Math.round(p * 100)}%`))
   .then(() => {
     view.build();
-    idleState.stations = sim?.state.stations ?? new Sim(() => {}).state.stations;
     renderMenu();
     showScreen('menu');
   })

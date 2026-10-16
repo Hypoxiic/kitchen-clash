@@ -1,4 +1,4 @@
-import type { Profile } from './types';
+import type { Profile, RoundSettings } from './types';
 
 export const COLORS = ['#e4572e', '#2e86de', '#29a36a', '#a259d9', '#f2a541', '#e84393'];
 
@@ -42,4 +42,14 @@ export function loadHistory(): MatchRecord[] {
 
 export function recordMatch(m: MatchRecord) {
   write(HISTORY_KEY, [...loadHistory(), m].slice(-200));
+}
+
+const SETTINGS_KEY = 'kc.settings';
+
+export function loadSettings(): RoundSettings {
+  return { recipe: 'random', theme: 'random', ...read<Partial<RoundSettings>>(SETTINGS_KEY, {}) };
+}
+
+export function saveSettings(s: RoundSettings) {
+  write(SETTINGS_KEY, s);
 }

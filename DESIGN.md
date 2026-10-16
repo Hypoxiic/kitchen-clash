@@ -21,14 +21,15 @@ Two players share one kitchen and compete over a multi-round tournament.
 Both chefs cook **the same recipe** in one shared kitchen. Whoever makes the
 dish closest to the recipe wins, as decided by a judge's scorecard.
 
-- **One shared pantry with limited stock.** Only one chef can be in the pantry at
-  a time, and there are only a few of each ingredient (e.g. 2 tomatoes, 3 patties).
-  It also has ingredients the recipe doesn't use, so grabbing the wrong one costs points.
+- **Walk-in pantry and walk-in fridge** behind the kitchen. Both chefs can be inside at
+  once (and bump into each other), but stock is limited and shared. Each room also has
+  ingredients the recipe doesn't use, so grabbing the wrong one costs points.
 - **Recipe peek costs time.** The recipe card isn't always on screen. Tapping
   📜 opens it, but your chef stands still while you read and the clock keeps running.
 - **Carry one thing at a time** (Overcooked style).
-- **Stations:** pantry (shared), 2 chopping boards (shared), stove with 2
-  burners (shared), one plate per chef on the centre island, the pass (serve), a bin.
+- **Stations:** walk-in pantry and fridge, 2 chopping boards, a grill with 2 burners,
+  a blowtorch, 2 stew pots, one plate per chef on the centre island, the pass, a bin.
+  Each has a floating sign and a floor spot, and the one you need next glows.
 - **The stove cooks in real time.** Put the patty on and go do something else, but
   come back in time: raw, then medium (green zone), then burnt.
 - **Chopping** is the swipe mini-game; cut quality is kept with the ingredient.
@@ -47,8 +48,13 @@ dish closest to the recipe wins, as decided by a judge's scorecard.
 | Assembly | 15 | Stack order compared to the recipe |
 | Speed | 10 | Time left when you served |
 
-First recipe: **Classic Cheeseburger**. Bottom bun, medium patty, sliced cheese,
-shredded lettuce, sliced tomato, top bun.
+Recipes (all halal, no pork or alcohol): **Classic Cheeseburger**, **Garden Veggie
+Burger**, **Steak & Mash** (potato boiled to mash in a pot) and **Garden Veg Stew**
+(stirred in a pot). Burgers need the cheese melted with the blowtorch. For the stew,
+"Assembly" is replaced by "Stirring".
+
+Kitchen themes: **Cozy Cottage**, **Retro Diner**, **Night Bistro**, **Spice Market**.
+Each changes the floor, wall paint, counter colours, lighting and decor.
 
 ### Look and feel
 

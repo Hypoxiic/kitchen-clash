@@ -26,6 +26,7 @@
       <div class="hint" id="hint"></div>
       <div class="hud-bottom">
         <div id="held" class="held"></div>
+        <button id="btn-takeback" class="pill-btn" hidden>↩ Take back top item</button>
         <button id="btn-recipe" class="round-btn" aria-label="Read the recipe">📜</button>
       </div>
     </div>
@@ -34,7 +35,7 @@
 
     <div id="menu" class="screen" hidden>
       <h1>Kitchen<br />Clash</h1>
-      <p class="tagline">Same recipe. One pantry. Best dish wins.</p>
+      <p class="tagline">Same recipe. One kitchen. Best dish wins.</p>
       <label class="field">
         <span>Chef name</span>
         <input id="name" maxlength="12" autocomplete="off" />
@@ -42,6 +43,22 @@
       <div class="field">
         <span>Apron colour</span>
         <div id="colors" class="swatches"></div>
+      </div>
+      <div class="field">
+        <span>Dish</span>
+        <div class="picker">
+          <button id="dish-prev" class="ghost" aria-label="Previous dish">‹</button>
+          <b id="pick-dish"></b>
+          <button id="dish-next" class="ghost" aria-label="Next dish">›</button>
+        </div>
+      </div>
+      <div class="field">
+        <span>Kitchen</span>
+        <div class="picker">
+          <button id="theme-prev" class="ghost" aria-label="Previous kitchen">‹</button>
+          <b id="pick-theme"></b>
+          <button id="theme-next" class="ghost" aria-label="Next kitchen">›</button>
+        </div>
       </div>
       <button id="btn-host" class="primary">Host a game</button>
       <div class="join-row">
@@ -66,20 +83,21 @@
         <p class="eyebrow">Today's dish</p>
         <div class="dish-emoji" id="intro-emoji">🍔</div>
         <h2 id="intro-name"></h2>
+        <p class="intro-theme" id="intro-theme"></p>
         <p class="small">Tap 📜 to check the recipe, but your chef stops while you read!</p>
         <div id="intro-count" class="count">3</div>
       </div>
     </div>
 
-    <!-- Pantry bottom sheet -->
-    <div id="pantry" class="sheet-wrap" hidden>
+    <!-- Walk-in pantry / fridge bottom sheet -->
+    <div id="store" class="sheet-wrap" hidden>
       <div class="sheet">
         <div class="sheet-head">
-          <h3>🧺 Pantry</h3>
-          <button id="pantry-close" class="ghost small-btn">Close</button>
+          <h3 id="store-title">🧺 Walk-in Pantry</h3>
+          <button id="store-close" class="ghost small-btn">Close</button>
         </div>
-        <p class="small">Take one thing. Stock is shared, so don't leave your rival the last tomato.</p>
-        <div id="pantry-grid" class="pantry-grid"></div>
+        <p class="small">Take one thing. Stock is shared, so don't leave your rival the last one.</p>
+        <div id="store-grid" class="store-grid"></div>
       </div>
     </div>
 
@@ -106,16 +124,17 @@
       </div>
     </div>
 
-    <!-- Chopping mini-game -->
-    <div id="chop" hidden>
-      <canvas id="chop-canvas"></canvas>
-      <div class="chop-top">
+    <!-- Mini-games: chop, torch, stir -->
+    <div id="game" hidden>
+      <canvas id="game-canvas"></canvas>
+      <div class="game-top">
         <div>
-          <div id="chop-title" class="chop-title"></div>
-          <div id="chop-msg"></div>
+          <div id="game-title" class="game-title"></div>
+          <div id="game-msg"></div>
         </div>
-        <button id="chop-leave" class="ghost small-btn">Leave</button>
+        <button id="game-leave" class="ghost small-btn">Leave</button>
       </div>
+      <button id="game-done" class="primary game-done" hidden>Done ✓</button>
     </div>
 
     <!-- Judge's scorecard -->
